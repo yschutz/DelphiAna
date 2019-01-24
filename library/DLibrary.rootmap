@@ -1,0 +1,8 @@
+[ DLibrary.so ]
+# List of selected classes
+class DData
+class DEvent
+class DParticle
+header DData.h
+header DEvent.h
+header DParticle.h
