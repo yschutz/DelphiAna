@@ -8,6 +8,7 @@
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TLorentzVector.h>
+#include <TMath.h>
 #include <TRandom.h>
 #include <TSystem.h>
 #include <iostream>
@@ -190,7 +191,7 @@ void DData::Correlation()
 {
    // produce 2 particle correla~tion
    
-   const Int_t kPoolMixingMethod = 1;
+   const Int_t kPoolMixingMethod = 2;
    if (!fHCreated) {
       CreateHistograms(kCorrelation);
    }
@@ -203,8 +204,6 @@ void DData::Correlation()
    TH2F *hMH  = dynamic_cast<TH2F*>(fHistoList->FindObject("EtaPhiMH"));
    TH2F *hCH  = dynamic_cast<TH2F*>(fHistoList->FindObject("EtaPhiCH"));
    TH1F *hELH = dynamic_cast<TH1F*>(fHistoList->FindObject("ELeadingH"));
-
-   std::cout << "Correlation " << fCurrentEvent << std::endl;
 
    Int_t max = Leading();
    (dynamic_cast<TH1F*>(fHistoList->FindObject("Mul")))->Fill(fMultiplicity); 
@@ -245,6 +244,7 @@ void DData::Correlation()
       MakeMulPool(kPoolMixingMethod);
    TH2F *hh = nullptr;
    Int_t currentMul = fMultiplicity;
+   // mixing method by selecting random events stored in the pool 
    if (kPoolMixingMethod == 1)
    {
       Int_t mixCounter = 0;
@@ -265,7 +265,6 @@ void DData::Correlation()
          }
          else
             continue;
-         std::cout << "Correlation " << mixCounter << " " << event->EventNumber() << " " << eventIndex << std::endl;
          if (event->EventNumber() != fCurrentEvent)
          {
             mixCounter++;
@@ -273,27 +272,59 @@ void DData::Correlation()
             while (DParticle *part = (DParticle *)next())
                hh->Fill(part->Eta() - etaL, (part->Phi() - phiL) * TMath::DegToRad());
          }
-      } 
-      } else {
-
-         Long64_t vIndex = std::find(fMulHighIndexPool.begin(), fMulHighIndexPool.end(), fCurrentEvent) - fMulHighIndexPool.begin();
-
-         Long64_t eventIndex = fCurrentEvent;
-         Int_t increment = 1;
-         if (fCurrentEvent + fMixing >= fEvents)
-            increment = -1; ;
-         Int_t mixCounterL = 0, mixCounterH = 0; 
-         while (mixCounterL < fMixing || mixCounterH < fMixing) {
-            eventIndex = eventIndex + increment; 
-            Int_t mul = LoadEvent(eventIndex); 
-            if (mul < fMulLow && mixCounterL < fMixing) {
-               mixCounterL++;
-            } else if (mul > fMulHigh && mixCounterH < fMixing) {
-               mixCounterH++; 
-            }
-            std::cout << "Mix " << fCurrentEvent << " " << mixCounterL << " " << mixCounterL << std::endl;
+      }
+   }
+   else
+   {
+      Long64_t vIndex, eIndex;
+      if (currentMul < fMulLow)
+      {
+         vIndex = std::find(fMulLowIndexPool.begin(), fMulLowIndexPool.end(), fCurrentEvent) - fMulLowIndexPool.begin();
+         eIndex = fMulLowIndexPool[vIndex];
+         Long64_t zero = 0.; 
+         Long64_t vIndexL = TMath::Max(zero, vIndex - fMixing - 1);
+         Long64_t vIndexH = TMath::Min(fEvents, vIndex + fMixing + 1);
+         for (Long64_t index = vIndexL; index < vIndex; index++)
+         {
+            Long64_t eIndex = fMulLowIndexPool[index];
+            LoadEvent(eIndex);
+            std::cout << "Mix L" << fCurrentEvent << " " << fEvent->EventNumber() << std::endl;
          }
       }
+      else if (currentMul > fMulHigh)
+      {
+         vIndex = std::find(fMulHighIndexPool.begin(), fMulHighIndexPool.end(), fCurrentEvent) - fMulHighIndexPool.begin();
+         eIndex = fMulHighIndexPool[vIndex];
+         Long64_t vIndexL = vIndex - fMixing - 1;
+         Long64_t vIndexH = vIndex + fMixing + 1;
+         for (Long64_t index = vIndexL; index < vIndex; index++)
+         {
+            Long64_t eIndex = fMulHighIndexPool[index];
+            LoadEvent(eIndex);
+            std::cout << "Mix H" << fCurrentEvent << " " << fEvent->EventNumber() << std::endl;
+         }
+      }
+
+      // Long64_t eventIndex = fCurrentEvent;
+      // Int_t increment = 1;
+      // if (fCurrentEvent + fMixing >= fEvents)
+      //    increment = -1;
+      // ;
+      // Int_t mixCounterL = 0, mixCounterH = 0;
+      // while (mixCounterL < fMixing || mixCounterH < fMixing)
+      // {
+      //    eventIndex = eventIndex + increment;
+      //    Int_t mul = LoadEvent(eventIndex);
+      //    if (mul < fMulLow && mixCounterL < fMixing)
+      //    {
+      //       mixCounterL++;
+      //    }
+      //    else if (mul > fMulHigh && mixCounterH < fMixing)
+      //    {
+      //       mixCounterH++;
+      //    }
+      // }
+   }
 }
 
 //==========================================================================
@@ -829,7 +860,7 @@ void DData::Loop(const Eopt opt, const Epopt popt, const Eparam par)
    
    printf("INFO: Loop(%i, %i)\n", opt, popt); 
    fCurrentPartSel = popt; 
-   fEvents = fChain->GetEntriesFast();
+   fEvents = 20; //fChain->GetEntriesFast();
    Long64_t nbytes = 0;
    for (Long64_t jentry = 0; jentry < fEvents; jentry++)
    {
@@ -879,7 +910,7 @@ void DData::MakeMulPool(Int_t method)
       Int_t lowCounter = 0, highCounter = 0;
       while (lowCounter < fMixing * kMix || highCounter < fMixing * kMix)
       {
-         Int_t eventIndex = gRandom->Integer(fChain->GetEntriesFast());
+         Int_t eventIndex = gRandom->Integer(fEvents);
          Int_t mul = LoadEvent(eventIndex);
          if (mul < fMulLow && lowCounter < fMixing * kMix)
          {
@@ -901,12 +932,14 @@ void DData::MakeMulPool(Int_t method)
       fChain->SetBranchStatus("Npac", 1);
       fChain->SetBranchStatus("Paid", 1);
 
-      for (Int_t eventIndex = 0; eventIndex < fChain->GetEntriesFast(); eventIndex++)
+      // store event numbers with low and high multiplicity
+      Long64_t eventIndexMax = fEvents; 
+      for (Int_t eventIndex = 0; eventIndex < eventIndexMax; eventIndex++)
       {
          Int_t mul = LoadEventMultiplicity(eventIndex); 
          if (mul < fMulLow )
             fMulLowIndexPool.push_back(eventIndex); 
-         else if (mul > fMulHigh) 
+         else if (mul > fMulHigh)
             fMulHighIndexPool.push_back(eventIndex); 
       }
       fChain->SetBranchStatus("*", 1); //enable all branches
