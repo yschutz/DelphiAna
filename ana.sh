@@ -14,6 +14,14 @@ then
 	help
 	exit
 else
+	path="/Users/schutz/cernbox/delphi/data/"
+	eventfile=$path/event.root
+	if [ ! -f $eventfile ]
+	then 
+		echo $eventfile not found
+		exit
+	fi
+	export DATAPATH=$path
 	export OPT1=`echo $1| awk '{print toupper($0)}'`
 	if [ "$1" = "h" ]
 	then

@@ -6,7 +6,8 @@
 void DAna()
 {
 	const Int_t kVerbose = 0;
-	DData *data = new DData("DXXGeV", "e+e- XX GeV", "../data/");
+	TString dataPath(gSystem->Getenv("DATAPATH")); 
+	DData *data = new DData("DXXGeV", "e+e- XX GeV", dataPath);
 	Float_t ecm = data->GetEcm(); 
 	char cecm[9] = "";
 	sprintf(cecm, "%.3f", ecm);
