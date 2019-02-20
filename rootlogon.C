@@ -3,4 +3,5 @@
     gSystem->AddIncludePath(incpath.Prepend("-I")); 
     incpath.Append("/library");
     gSystem->AddIncludePath(incpath); 
+    cout << "test C" << endl;
 }
