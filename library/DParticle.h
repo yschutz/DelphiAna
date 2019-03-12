@@ -16,15 +16,19 @@ class DParticle : public TNamed {
    DParticle(); 
    DParticle(Int_t pdgCode, const TLorentzVector &mom4, Int_t decay, Double_t vr, Double_t vz);
    virtual ~DParticle() {;}
+   DParticle(const DParticle& part); 
+   DParticle& operator=(const DParticle& part);
 
    void     Clear();  
    Double_t Energy()  const   { return fMomentum4.E(); } 
    Double_t Eta() const; 
    Double_t Mass() const      { return fMomentum4.M(); }
    TVector3 Momentum3() const { return fMomentum4.Vect(); } 
-   Double_t Momentum()  const { return fMomentum4.P(); } 
+   Double_t Momentum()  const { return fMomentum4.P(); }
+   Double_t Pt() const        { return fMomentum4.Pt(); }
    Int_t    PdgCode() const   { return fPdgCode; }
    Double_t Phi()const        { return TMath::RadToDeg() * fMomentum4.Phi(); } 
+   Double_t PhiRad()const     { return fMomentum4.Phi(); } 
    void     Print(Int_t pindex) const;  
    void     Set(Int_t pdg, Double_t px, Double_t py, Double_t pz, Double_t mass, Int_t decay, Double_t vr, Double_t vz);
    Double_t Theta()const      { return TMath::RadToDeg() * fMomentum4.Theta(); } 

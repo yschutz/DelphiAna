@@ -14,12 +14,16 @@
 
 #include <map>
 
-#include "DParticle.h"
+//#include "DParticle.h"
 
 // Header file for the classes stored in the TTree Delphi events
 // root file = event.root
 // Tree      = h100 
 class TH1F; 
+class TH1D; 
+class TH2D;
+class TAxis;
+class DPoolManager;
 class DEvent; 
 class DData : public TNamed {
 
@@ -59,8 +63,13 @@ public :
    void             SetMulBin(Int_t low, Int_t high)       { fMulLow = low; fMulHigh = high; }
    void             SetVerbosity(Int_t verb)               { fVerbose = verb; }
    void             SingleHisto(Eparam par); 
-   void             WriteOutput() const; 
+   void             WriteOutput(); 
 
+   void SetPtBinning(Int_t nBins, Double_t *limits);
+   void SetMultBinning(Int_t nBins, Double_t *limits);
+   void SetZvtxBinning(Int_t nBins, Double_t *limits);
+   Int_t GetMultBin() const;
+   
 private :
    void             CreateHistograms(Eopt opt, Eparam par = kpaNULL);
    Int_t            LoadEventMultiplicity(Long64_t jentry); 
@@ -94,6 +103,22 @@ private :
    Long64_t fTriggersL;                               //!number of low multiplicity triggers
    Int_t fVerbose;                                    //!level of verbosity: 0 = silent; 1 = warning; 2 = info
 
+   // 2-particle correlation histos
+   static const Int_t fNMaxBinsMult = 5;
+   static const Int_t fNMaxBinsPt = 10;
+   static const Int_t fNMaxBinsZvtx = 5;
+   Int_t fNbinsMult;
+   Int_t fNbinsTrackPt;
+   Int_t fNbinsZvtx;
+   TAxis *fMultAxis;
+   TAxis *fTrackPtAxis;
+   TAxis *fZvtxAxis;
+   TH1D *fHistTrig[fNMaxBinsMult][fNMaxBinsZvtx][fNMaxBinsPt]; //!
+   TH2D *fHistDPhiEta[fNMaxBinsMult][fNMaxBinsZvtx][fNMaxBinsPt][fNMaxBinsPt]; //!
+   TH2D *fHistDPhiEtaMix[fNMaxBinsMult][fNMaxBinsZvtx][fNMaxBinsPt][fNMaxBinsPt]; //!   
+   DPoolManager *fPoolMgr; //!
+   
+   
    // Fixed size dimensions of array or collections stored in the TTree if any.
 
    // // Declaration of leaf types
@@ -193,6 +218,6 @@ private :
    TBranch        *b_Jee;   //!
    TBranch        *b_Jem;   //!
    TBranch        *b_Jep;   //!
-   ClassDef(DData,1);
+   ClassDef(DData,1)
 };
 #endif

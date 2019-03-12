@@ -2,6 +2,7 @@
 #include "DData.h"
 #include "DEvent.h"
 #include "DParticle.h"
+#include "DPool.h"
 
 #include <TCanvas.h>
 #include <TClonesArray.h>
@@ -12,6 +13,9 @@
 #include <TRandom.h>
 #include <TSystem.h>
 #include <iostream>
+#include <chrono>
+
+ClassImp(DData)
 
 //==========================================================================
 DData::DData(const TString &name, const TString &title, const TString &dirname) : TNamed(name, title), fChain(nullptr),
@@ -20,7 +24,15 @@ DData::DData(const TString &name, const TString &title, const TString &dirname) 
                                                                                   fHistoList(nullptr), fHistosOutFile(nullptr),
                                                                                   fMixing(10), fMultiplicity(0), 
                                                                                   fTriggersH(0), fTriggersL(0), 
-                                                                                  fVerbose(0)
+  fVerbose(0),
+  fNbinsMult(0), 
+  fNbinsTrackPt(0),
+  fNbinsZvtx(1),
+  fMultAxis(0x0), 
+  fTrackPtAxis(0x0),
+  fZvtxAxis(0x0),
+  fPoolMgr(0x0)
+
 {
    // ctor
    fPopt[kAll]     = TString("All"); 
@@ -44,6 +56,19 @@ DData::DData(const TString &name, const TString &title, const TString &dirname) 
    }
    fInputFile->GetObject(kNtupleName, fChain);
    Init();
+
+   for (Int_t iMult=0; iMult<fNMaxBinsMult; iMult++) {
+     for(Int_t iZvtx = 0; iZvtx<fNMaxBinsZvtx; ++iZvtx) {
+       for (Int_t iPtBin=0; iPtBin<fNMaxBinsPt; iPtBin++) {
+	 fHistTrig[iMult][iZvtx][iPtBin] = NULL;
+	 for (Int_t jPtBin=0; jPtBin<fNMaxBinsPt; jPtBin++) {
+	   fHistDPhiEta[iMult][iZvtx][iPtBin][jPtBin] = NULL;
+	   fHistDPhiEtaMix[iMult][iZvtx][iPtBin][jPtBin] = NULL;
+	 }
+       }
+     }
+   }
+   
 }
 
 //==========================================================================
@@ -59,7 +84,8 @@ DData::~DData()
    fMulLowEventPool.Delete(); 
    fMulHighEventPool.Delete(); 
    // fParticles->Delete(); 
-   // delete fParticles; 
+   // delete fParticles;
+   delete fPoolMgr;
 }
 
 //==========================================================================
@@ -237,94 +263,82 @@ void DData::Correlation()
       }
       index++;
    }
-   // make mixed
-   if (kPoolMixingMethod == 1 && ((fMulHighEventPool.GetEntries() == 0) || (fMulLowEventPool.GetEntries() == 0)))
-      MakeMulPool(kPoolMixingMethod);
-   if (kPoolMixingMethod == 2 && ((fMulHighIndexPool.size() == 0) || (fMulLowIndexPool.size() == 0)))
-      MakeMulPool(kPoolMixingMethod);
-   TH2F *hh = nullptr;
-   Int_t currentMul = fMultiplicity;
-   // mixing method by selecting random events stored in the pool 
-   if (kPoolMixingMethod == 1)
-   {
-      Int_t mixCounter = 0;
-      while (mixCounter < fMixing)
-      {
-         Int_t eventIndex = 0;
-         DEvent *event = nullptr;
-         eventIndex = gRandom->Integer(TMath::Min(fMulLowEventPool.GetEntriesFast(), fMulHighEventPool.GetEntriesFast()));
-         if (currentMul < fMulLow)
-         {
-            hh = hML;
-            event = dynamic_cast<DEvent *>(fMulLowEventPool.At(eventIndex));
-         }
-         else if (currentMul > fMulHigh)
-         {
-            hh = hMH;
-            event = dynamic_cast<DEvent *>(fMulHighEventPool.At(eventIndex));
-         }
-         else
-            continue;
-         if (event->EventNumber() != fCurrentEvent)
-         {
-            mixCounter++;
-            TIter next(event->Particles());
-            while (DParticle *part = (DParticle *)next())
-               hh->Fill(part->Eta() - etaL, (part->Phi() - phiL) * TMath::DegToRad());
-         }
-      }
-   }
-   else
-   {
-      Long64_t vIndex, eIndex;
-      if (currentMul < fMulLow)
-      {
-         vIndex = std::find(fMulLowIndexPool.begin(), fMulLowIndexPool.end(), fCurrentEvent) - fMulLowIndexPool.begin();
-         eIndex = fMulLowIndexPool[vIndex];
-         Long64_t zero = 0.; 
-         Long64_t vIndexL = TMath::Max(zero, vIndex - fMixing - 1);
-         Long64_t vIndexH = TMath::Min(fEvents, vIndex + fMixing + 1);
-         for (Long64_t index = vIndexL; index < vIndex; index++)
-         {
-            Long64_t eIndex = fMulLowIndexPool[index];
-            LoadEvent(eIndex);
-            std::cout << "Mix L" << fCurrentEvent << " " << fEvent->EventNumber() << std::endl;
-         }
-      }
-      else if (currentMul > fMulHigh)
-      {
-         vIndex = std::find(fMulHighIndexPool.begin(), fMulHighIndexPool.end(), fCurrentEvent) - fMulHighIndexPool.begin();
-         eIndex = fMulHighIndexPool[vIndex];
-         Long64_t vIndexL = vIndex - fMixing - 1;
-         Long64_t vIndexH = vIndex + fMixing + 1;
-         for (Long64_t index = vIndexL; index < vIndex; index++)
-         {
-            Long64_t eIndex = fMulHighIndexPool[index];
-            LoadEvent(eIndex);
-            std::cout << "Mix H" << fCurrentEvent << " " << fEvent->EventNumber() << std::endl;
-         }
-      }
 
-      // Long64_t eventIndex = fCurrentEvent;
-      // Int_t increment = 1;
-      // if (fCurrentEvent + fMixing >= fEvents)
-      //    increment = -1;
-      // ;
-      // Int_t mixCounterL = 0, mixCounterH = 0;
-      // while (mixCounterL < fMixing || mixCounterH < fMixing)
-      // {
-      //    eventIndex = eventIndex + increment;
-      //    Int_t mul = LoadEvent(eventIndex);
-      //    if (mul < fMulLow && mixCounterL < fMixing)
-      //    {
-      //       mixCounterL++;
-      //    }
-      //    else if (mul > fMulHigh && mixCounterH < fMixing)
-      //    {
-      //       mixCounterH++;
-      //    }
-      // }
+   // make 2-particle correlations including event mixing
+   Int_t multBin = GetMultBin();
+   if (multBin<0) return;
+
+   // event z vertex
+   Double_t fzvtx = 0.; // for the moment 0
+   if (fzvtx >= fZvtxAxis->GetXmax()) return;
+   if (fzvtx <= fZvtxAxis->GetXmin()) return;
+   Int_t zvtxBin = fZvtxAxis->FindBin(fzvtx) - 1;
+
+   DPool *poolTrk = fPoolMgr->GetEventPool(-fMultiplicity,0); // for the moment no z vtx binning
+   Bool_t poolReady = poolTrk->IsReady();
+   // same event
+   for (Int_t iTrack=0; iTrack<fEvent->Particles()->GetEntriesFast(); iTrack++) {
+     DParticle *trigTrack = (DParticle*) fEvent->Particles()->UncheckedAt(iTrack);
+     // if (trigTrack->Eta()<=fMinEta ||
+     // 	 trigTrack->Eta()>=fMaxEta) continue;
+     if (trigTrack->VtxR() > 0.1 ||
+	 trigTrack->VtxZ() > 1.0) continue; // only primary tracks
+     
+      Int_t ptBinTrk = fTrackPtAxis -> FindBin(trigTrack->Pt());
+      if (ptBinTrk<1 || ptBinTrk>fNbinsTrackPt) {
+	continue;
+      }
+      fHistTrig[multBin][zvtxBin][ptBinTrk-1]->Fill(0.5);
+      
+      for (Int_t jTrack=0; jTrack<fEvent->Particles()->GetEntriesFast(); jTrack++) {
+	DParticle *assocTrack = (DParticle*) fEvent->Particles()->UncheckedAt(jTrack);
+	if (jTrack == iTrack) continue;
+	// if (assocTrack->Eta()<=fMinEta ||
+	//     assocTrack->Eta()>=fMaxEta) continue;
+	if (assocTrack->VtxR() > 0.1 ||
+	    assocTrack->VtxZ() > 1.0) continue; // only primary tracks
+
+	Int_t ptBinAssocTrk = fTrackPtAxis -> FindBin(assocTrack->Pt());
+	if (ptBinAssocTrk<1 || ptBinAssocTrk>fNbinsTrackPt) {
+	  continue;
+	}
+
+	Double_t deltaPhi = trigTrack->PhiRad() - assocTrack->PhiRad();
+	if (deltaPhi >  1.5*TMath::Pi()) deltaPhi -= TMath::TwoPi();
+	if (deltaPhi < -0.5*TMath::Pi()) deltaPhi += TMath::TwoPi();
+
+	fHistDPhiEta[multBin][zvtxBin][ptBinTrk-1][ptBinAssocTrk-1]->Fill(deltaPhi,
+									  trigTrack->Eta()-assocTrack->Eta());
+      }
+      // mixed event
+      if (poolReady) {
+	for (Int_t jMix=0; jMix<poolTrk->GetCurrentNEvents(); jMix++) {
+	  TClonesArray *mixedTrk = poolTrk->GetEvent(jMix);
+	  for (Int_t jTrack=0; jTrack<mixedTrk->GetEntriesFast(); jTrack++) {
+	    DParticle *assocTrack = (DParticle*) mixedTrk->UncheckedAt(jTrack);
+	    // if (assocTrack->Eta()<=fMinEta ||
+	    // 	assocTrack->Eta()>=fMaxEta) continue;
+	    if (assocTrack->VtxR() > 0.1 ||
+		assocTrack->VtxZ() > 1.0) continue; // only primary tracks
+
+	    Int_t ptBinAssocTrk = fTrackPtAxis -> FindBin(assocTrack->Pt());
+	    if (ptBinAssocTrk<1 || ptBinAssocTrk>fNbinsTrackPt) {
+	      continue;
+	    }
+
+	    Double_t deltaPhi = trigTrack->PhiRad() - assocTrack->PhiRad();
+	    if (deltaPhi >  1.5*TMath::Pi()) deltaPhi -= TMath::TwoPi();
+	    if (deltaPhi < -0.5*TMath::Pi()) deltaPhi += TMath::TwoPi();
+
+	    fHistDPhiEtaMix[multBin][zvtxBin][ptBinTrk-1][ptBinAssocTrk-1]->Fill(deltaPhi,
+										 trigTrack->Eta()-assocTrack->Eta());
+	  }
+	}
+      }
    }
+
+   poolTrk->UpdatePool(fEvent->Particles());
+      
 }
 
 //==========================================================================
@@ -332,8 +346,8 @@ void DData::CreateHistograms(Eopt opt, Eparam par)
 {
    // open output file and create histograms
 
-   if (!fHistosOutFile) fHistosOutFile = new TFile(fOutputFilename, "RECREATE", "Delphi basic histograms");
    if (!fHistoList)  fHistoList = new TList();
+   fHistoList->SetOwner(kTRUE);
 
    if (opt == kControlHisto || opt == kControlDiff) {
       fHCreated = kTRUE; 
@@ -506,6 +520,31 @@ void DData::CreateHistograms(Eopt opt, Eparam par)
       fHistoList->Add(new TH1I("mulL", "mul low", 1000, 0, 100000)); 
       fHistoList->Add(new TH1I("mulH", "mul high", 1000, 0, 100000)); 
 
+      // create 2-particle correlation histos
+      for (Int_t iMult=0; iMult<fNbinsMult; iMult++) {
+	for(Int_t iZvtx = 0; iZvtx < fNbinsZvtx; ++iZvtx) {
+	  for (Int_t iPtBin=0; iPtBin<fNbinsTrackPt; iPtBin++) {
+	    fHistTrig[iMult][iZvtx][iPtBin] = new TH1D(Form("fHistTrig_Mult%02d_Z%02d_PtBin%02d",iMult,iZvtx,iPtBin),
+							  "",1,0,1);
+	    fHistoList->Add(fHistTrig[iMult][iZvtx][iPtBin]);
+	    for (Int_t jPtBin=0; jPtBin<fNbinsTrackPt; jPtBin++) {
+	      fHistDPhiEta[iMult][iZvtx][iPtBin][jPtBin] = new TH2D(Form("fHistDPhiEta_Mult%02d_Z%02d_PtBin%02d_%02d",iMult,iZvtx,iPtBin,jPtBin),
+								       "",
+								       12,-0.5*TMath::Pi(),1.5*TMath::Pi(),
+								       64,-4.,4.);
+	      fHistoList->Add(fHistDPhiEta[iMult][iZvtx][iPtBin][jPtBin]);
+	      fHistDPhiEtaMix[iMult][iZvtx][iPtBin][jPtBin] = new TH2D(Form("fHistDPhiEtaMix_Mult%02d_Z%02d_PtBin%02d_%02d",iMult,iZvtx,iPtBin,jPtBin),
+									  "",
+									  12,-0.5*TMath::Pi(),1.5*TMath::Pi(),
+									  64,-4.,4.);
+	      fHistoList->Add(fHistDPhiEtaMix[iMult][iZvtx][iPtBin][jPtBin]);
+	    }
+	  }
+	}
+      }
+      fPoolMgr = new DPoolManager("pool",1, fMixing, fNbinsMult, (Double_t*)fMultAxis->GetXbins()->GetArray(), fNbinsZvtx, (Double_t*)fZvtxAxis->GetXbins()->GetArray());
+
+      
    } else if (opt == kSingleHisto) {
       fHCreated = kTRUE; 
       switch (par)
@@ -777,8 +816,8 @@ Long64_t DData::LoadEvent(Long64_t jentry)
    fEvent->SetSpericity(Sphval1, Sphval2, Sphval3); 
    fEvent->SetThrust(Thrval1, Thrval2, Thrval3); 
    MakeParticlesList(fCurrentPartSel); 
-   if (fMultiplicity >= fMulLow && fMultiplicity <= fMulHigh)
-      return 0; 
+   // if (fMultiplicity >= fMulLow && fMultiplicity <= fMulHigh)
+   //    return 0; 
    return fMultiplicity; 
 } 
 
@@ -860,7 +899,7 @@ void DData::Loop(const Eopt opt, const Epopt popt, const Eparam par)
    
    printf("INFO: Loop(%i, %i)\n", opt, popt); 
    fCurrentPartSel = popt; 
-   fEvents = 20; //fChain->GetEntriesFast();
+   fEvents = fChain->GetEntriesFast();
    Long64_t nbytes = 0;
    for (Long64_t jentry = 0; jentry < fEvents; jentry++)
    {
@@ -1180,13 +1219,74 @@ void DData::SingleHisto(Eparam par)
 }
 
 //==========================================================================
-void DData::WriteOutput() const 
+void DData::WriteOutput() 
 {
    // write to the outputfile all memory objects attached to it   
+   if (!fHistosOutFile) fHistosOutFile = new TFile(fOutputFilename, "RECREATE", "Delphi basic histograms");
    if (fHistosOutFile)
    {
-      fHistosOutFile->Write();
+     //     fHistosOutFile->Write();
+     fHistoList->Write("histos",TObject::kSingleKey);
       std::cout << "INFO: WriteOutPut --> generated data saved in " << fHistosOutFile->GetName() << std::endl; 
    } else       
       std::cout << "ERROR: WriteOutPut --> file " <<  "no outpufile  open" << std::endl; 
-   } 
+}
+
+//====================================================================================================================================================
+void DData::SetMultBinning(Int_t nBins, Double_t *limits) {
+
+  if (nBins>fNMaxBinsMult) {
+    std::cout << "WARNING : only " << fNMaxBinsMult <<" centrality bins (out of the "<< nBins <<" proposed) will be considered" << std::endl;
+    nBins = fNMaxBinsMult;
+  }
+  if (nBins<=0) {
+    std::cout << "WARNING : at least one centrality bin must be considered" << std::endl;
+    nBins = 1;
+  }
+  
+  fNbinsMult = nBins;
+  fMultAxis  = new TAxis(fNbinsMult, limits);
+
+}
+
+//====================================================================================================================================================
+void DData::SetZvtxBinning(Int_t nBins, Double_t *limits) {
+
+  if (nBins>fNMaxBinsZvtx) {
+    std::cout << "WARNING : only " << fNMaxBinsZvtx <<" Zvtx bins (out of the " << nBins << " proposed) will be considered" << std::endl;
+    nBins = fNMaxBinsZvtx;
+  }
+  if (nBins<=0) {
+    std::cout << "WARNING : at least one Zvtx bin must be considered" << std::endl;
+    nBins = 1;
+  }
+  
+  fNbinsZvtx = nBins;
+  fZvtxAxis  = new TAxis(fNbinsZvtx, limits);
+
+}
+
+//====================================================================================================================================================
+void DData::SetPtBinning(Int_t nBins, Double_t *limits) {
+
+  if (nBins>fNMaxBinsPt) {
+    std::cout << "WARNING : only " << fNMaxBinsPt << " pt bins (out of the " << nBins << " proposed) will be considered" << std::endl;
+    nBins = fNMaxBinsPt;
+  }
+  if (nBins<=0) {
+    std::cout << "WARNING : at least one pt bin must be considered" << std::endl;
+    nBins = 1;
+  }
+  
+  fNbinsTrackPt = nBins;
+  fTrackPtAxis  = new TAxis(fNbinsTrackPt, limits);
+
+}
+
+//====================================================================================================================================================
+Int_t DData::GetMultBin() const {
+
+  Int_t bin = fMultAxis->FindBin(-fMultiplicity) - 1;
+  if (bin >= fNbinsMult) bin = -1;
+  return bin;
+}

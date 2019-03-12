@@ -3,6 +3,9 @@
 class DData
 class DEvent
 class DParticle
+class DPool
+class DPoolManager
 header DData.h
 header DEvent.h
 header DParticle.h
+header DPool.h

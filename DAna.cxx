@@ -67,8 +67,19 @@ void DAna()
 		TString smulL(gSystem->Getenv("LOWM"));
 		TString smulH(gSystem->Getenv("HIGHM"));
 		data->SetMulBin(smulL.Atoi(), smulH.Atoi());
+		Double_t mult_bins[4];
+		mult_bins[0] = -1e6.;
+		mult_bins[1] = -smulH.Atof();
+		mult_bins[2] = -smulL.Atof();
+		mult_bins[3] = 0.;
+		std::cout << "Multiplicity bins => (0," << TMath::Abs(mult_bins[2]) << "," << TMath::Abs(mult_bins[1]) << ",1e6)" << std::endl;
+		data->SetMultBinning(3,mult_bins);
 		TString mix(gSystem->Getenv("MIX"));
-		data->SetMix(mix.Atoi()); 
+		data->SetMix(mix.Atoi());
+		Double_t z_bins[2] = {-5,5};
+		data->SetZvtxBinning(1,z_bins);
+		Double_t pt_bins[6] = {0.4,1,2,3,5,10};
+		data->SetPtBinning(5,pt_bins);
 	}
 	data->Run(oo1, oo2, par);
 	data->WriteOutput(); 

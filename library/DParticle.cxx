@@ -24,6 +24,33 @@ DParticle::DParticle(Int_t pdgCode, const TLorentzVector &mom4, Int_t decay, Dou
 }
 
 //==========================================================================
+DParticle::DParticle(const DParticle& part) :
+  TNamed(part),
+  fDecayPartnerIndex(part.fDecayPartnerIndex),
+  fMomentum4(part.fMomentum4),
+  fPdgCode(part.fPdgCode),
+  fVtxRphi(part.fVtxRphi),
+  fVtxZ(part.fVtxZ)
+{
+  // Copy constructor
+}
+
+//==========================================================================
+DParticle& DParticle::operator=(const DParticle& part)
+{
+  // Assignment operator
+  if(this!=&part) {
+    TNamed::operator=(part); 
+    fDecayPartnerIndex = part.fDecayPartnerIndex;
+    fMomentum4 = part.fMomentum4;
+    fPdgCode = part.fPdgCode;
+    fVtxRphi= part.fVtxRphi;
+    fVtxZ = part.fVtxZ;
+  }
+  return *this;
+}
+
+//==========================================================================
 void DParticle::Clear()
 {
   // clears all data 

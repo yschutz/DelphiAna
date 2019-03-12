@@ -14,7 +14,7 @@ then
 	help
 	exit
 else
-	path="/Users/schutz/cernbox/delphi/data/"
+	path="/home/cheshkov/Documents/delphi/data/"
 	eventfile=$path/event.root
 	if [ ! -f $eventfile ]
 	then 
