@@ -123,6 +123,8 @@ private :
 
    // // Declaration of leaf types
    Float_t         Ecm;
+   Float_t         Bt; 
+   Float_t         Bz; 
    Float_t         Sphvec1x;
    Float_t         Sphvec1y;
    Float_t         Sphvec1z;
@@ -172,6 +174,8 @@ private :
 
    // // List of branches
    TBranch        *b_Ecm;   //!
+   TBranch        *b_Bt;   //!
+   TBranch        *b_Bz;   //!
    TBranch        *b_Sphvec1x;   //!
    TBranch        *b_Sphvec1y;   //!
    TBranch        *b_Sphvec1z;   //!

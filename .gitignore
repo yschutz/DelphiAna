@@ -2,3 +2,4 @@
 library/DLibrary.so
 library/dict.cxx
 library/dict_rdict.pcm
+.DS_Store
