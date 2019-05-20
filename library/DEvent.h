@@ -18,6 +18,7 @@ class DEvent : public TNamed {
    DEvent(); 
    virtual ~DEvent();
    
+   virtual void     Clear(Option_t *option ="");
    Double_t         Aplanarity() const                  { return fSphericity[2] * 3. / 2.; }        
    Double_t         BeamSpotL() const                   { return fBeamSpotLong; }                                       
    Double_t         BeamSpotT() const                   { return fBeamSpotTrans; }                                       

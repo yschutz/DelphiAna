@@ -19,7 +19,7 @@ class DPool{
     }
     
     // clear current event
-    fTracks[fCurrentEvent]->Clear(); 
+    fTracks[fCurrentEvent]->Clear("C"); 
     
     // fill TClonesArray for current event
     Int_t nTracks=0;

@@ -19,7 +19,7 @@ class DParticle : public TNamed {
    DParticle(const DParticle& part); 
    DParticle& operator=(const DParticle& part);
 
-   void     Clear();  
+   virtual void Clear(Option_t *option ="");
    Double_t Energy()  const   { return fMomentum4.E(); } 
    Double_t Eta() const; 
    Double_t Mass() const      { return fMomentum4.M(); }
@@ -32,6 +32,7 @@ class DParticle : public TNamed {
    void     Print(Int_t pindex) const;  
    void     Set(Int_t pdg, Double_t px, Double_t py, Double_t pz, Double_t mass, Int_t decay, Double_t vr, Double_t vz);
    Double_t Theta()const      { return TMath::RadToDeg() * fMomentum4.Theta(); } 
+   Double_t ThetaRad()const      { return fMomentum4.Theta(); } 
    Double_t VtxR() const      { return fVtxRphi; }
    Double_t VtxZ() const      { return fVtxZ; }
 

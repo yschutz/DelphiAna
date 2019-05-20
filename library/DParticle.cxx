@@ -51,8 +51,10 @@ DParticle& DParticle::operator=(const DParticle& part)
 }
 
 //==========================================================================
-void DParticle::Clear()
+void DParticle::Clear(Option_t *option)
 {
+  SetName(""); 
+  SetTitle(""); 
   // clears all data 
   fPdgCode = 0; 
   fMomentum4.SetXYZM(0., 0., 0., -1.); 

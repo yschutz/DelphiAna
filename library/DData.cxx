@@ -20,6 +20,7 @@ ClassImp(DData)
     //==========================================================================
     DData::DData(const TString &name, const TString &title, const TString &dirname) : TNamed(name, title), fChain(nullptr),
                                                                                       fDataDirName(dirname),
+                                                                                      fEvent(nullptr),
                                                                                       fHCreated(kFALSE), fHCorrelation(kFALSE),
                                                                                       fHistoList(nullptr), fHistosOutFile(nullptr),
                                                                                       fMixing(10), fMultiplicity(0),
@@ -68,6 +69,8 @@ ClassImp(DData)
                 {
                     fHistDPhiEta[iMult][iZvtx][iPtBin][jPtBin] = NULL;
                     fHistDPhiEtaMix[iMult][iZvtx][iPtBin][jPtBin] = NULL;
+                    fHistDPhiTheta[iMult][iZvtx][iPtBin][jPtBin] = NULL;
+                    fHistDPhiThetaMix[iMult][iZvtx][iPtBin][jPtBin] = NULL;
                 }
             }
         }
@@ -107,11 +110,14 @@ void DData::Control()
     (dynamic_cast<TH1F *>(fHistoList->FindObject("Aplanarity")))->Fill(fEvent->Aplanarity());
     TIter next(fEvent->Particles());
     Int_t index = -1;
+    Double_t sump = 0, sumpz = 0.;
     while (DParticle *part = (DParticle *)next())
     {
         index++;
         (dynamic_cast<TH1F *>(fHistoList->FindObject("RPhi")))->Fill(part->VtxR());
         (dynamic_cast<TH1F *>(fHistoList->FindObject("Z")))->Fill(part->VtxZ());
+	sumpz += (part->Momentum()*TMath::Cos(part->ThetaRad()));
+	sump += part->Momentum();
         if (index < Npac) // charged only
         {
             (dynamic_cast<TH1F *>(fHistoList->FindObject("Momentum")))->Fill(part->Momentum());
@@ -214,6 +220,8 @@ void DData::Control()
             break;
         }
     }
+    (dynamic_cast<TH1F *>(fHistoList->FindObject("sumpZ")))->Fill(sumpz);
+    (dynamic_cast<TH2F *>(fHistoList->FindObject("sumpZp")))->Fill(sumpz,sump);
 }
 
 //==========================================================================
@@ -293,13 +301,14 @@ void DData::Correlation()
     for (Int_t iTrack = 0; iTrack < fEvent->Particles()->GetEntriesFast(); iTrack++)
     {
         DParticle *trigTrack = (DParticle *)fEvent->Particles()->UncheckedAt(iTrack);
-        // if (trigTrack->Eta()<=fMinEta ||
-        // 	 trigTrack->Eta()>=fMaxEta) continue;
+	if (trigTrack->Eta()<=-1.74 ||
+	    trigTrack->Eta()>= 1.74) continue;
         if (trigTrack->VtxR() > 0.1 ||
             trigTrack->VtxZ() > 1.0)
             continue; // only primary tracks
 
-        Int_t ptBinTrk = fTrackPtAxis->FindBin(trigTrack->Pt());
+	//        Int_t ptBinTrk = fTrackPtAxis->FindBin(trigTrack->Pt());
+        Int_t ptBinTrk = fTrackPtAxis->FindBin(trigTrack->Momentum());
         if (ptBinTrk < 1 || ptBinTrk > fNbinsTrackPt)
         {
             continue;
@@ -311,26 +320,45 @@ void DData::Correlation()
             DParticle *assocTrack = (DParticle *)fEvent->Particles()->UncheckedAt(jTrack);
             if (jTrack == iTrack)
                 continue;
-            // if (assocTrack->Eta()<=fMinEta ||
-            //     assocTrack->Eta()>=fMaxEta) continue;
+	    if (assocTrack->Eta()<=-1.74 ||
+		assocTrack->Eta()>= 1.74) continue;
             if (assocTrack->VtxR() > 0.1 ||
                 assocTrack->VtxZ() > 1.0)
                 continue; // only primary tracks
 
-            Int_t ptBinAssocTrk = fTrackPtAxis->FindBin(assocTrack->Pt());
+            Int_t ptBinAssocTrk = fTrackPtAxis->FindBin(assocTrack->Momentum());
             if (ptBinAssocTrk < 1 || ptBinAssocTrk > fNbinsTrackPt)
             {
                 continue;
             }
 
-            Double_t deltaPhi = trigTrack->PhiRad() - assocTrack->PhiRad();
+            Double_t deltaPhi = assocTrack->PhiRad() - trigTrack->PhiRad();
             if (deltaPhi > 1.5 * TMath::Pi())
                 deltaPhi -= TMath::TwoPi();
             if (deltaPhi < -0.5 * TMath::Pi())
                 deltaPhi += TMath::TwoPi();
 
-            fHistDPhiEta[multBin][zvtxBin][ptBinTrk - 1][ptBinAssocTrk - 1]->Fill(deltaPhi,
-                                                                                  trigTrack->Eta() - assocTrack->Eta());
+	    Double_t deltaTheta = trigTrack->ThetaRad() - assocTrack->ThetaRad();
+            if (deltaTheta > 1.5 * TMath::Pi())
+                deltaTheta -= TMath::TwoPi();
+            if (deltaTheta < -0.5 * TMath::Pi())
+                deltaTheta += TMath::TwoPi();
+	    Double_t deltaEta = assocTrack->Eta() - trigTrack->Eta();
+	      
+	    Double_t dphi,dtheta,deta;
+	    if (!RotateTracks(trigTrack,assocTrack,dphi,dtheta,deta))
+	      printf("Rotation of tracks failed...\n");
+	    
+	    // printf("DEBUG: dphi: %f %f    dtheta: %f vs %f\n",
+	    // 	     deltaPhi,dphi,deltaTheta,dtheta);
+	    if (0) {
+	      fHistDPhiEta[multBin][zvtxBin][ptBinTrk - 1][ptBinAssocTrk - 1]->Fill(deltaPhi,deltaEta);
+	      fHistDPhiTheta[multBin][zvtxBin][ptBinTrk - 1][ptBinAssocTrk - 1]->Fill(deltaPhi,deltaTheta);
+	    }
+	    else {
+	      fHistDPhiEta[multBin][zvtxBin][ptBinTrk - 1][ptBinAssocTrk - 1]->Fill(dphi,deta);
+	      fHistDPhiTheta[multBin][zvtxBin][ptBinTrk - 1][ptBinAssocTrk - 1]->Fill(dphi,dtheta);
+	    }
         }
         // mixed event
         if (poolReady)
@@ -341,26 +369,43 @@ void DData::Correlation()
                 for (Int_t jTrack = 0; jTrack < mixedTrk->GetEntriesFast(); jTrack++)
                 {
                     DParticle *assocTrack = (DParticle *)mixedTrk->UncheckedAt(jTrack);
-                    // if (assocTrack->Eta()<=fMinEta ||
-                    // 	assocTrack->Eta()>=fMaxEta) continue;
+                    if (assocTrack->Eta()<=-1.74 ||
+                     	assocTrack->Eta()>= 1.74) continue;
                     if (assocTrack->VtxR() > 0.1 ||
                         assocTrack->VtxZ() > 1.0)
                         continue; // only primary tracks
 
-                    Int_t ptBinAssocTrk = fTrackPtAxis->FindBin(assocTrack->Pt());
+                    Int_t ptBinAssocTrk = fTrackPtAxis->FindBin(assocTrack->Momentum());
                     if (ptBinAssocTrk < 1 || ptBinAssocTrk > fNbinsTrackPt)
                     {
                         continue;
                     }
 
-                    Double_t deltaPhi = trigTrack->PhiRad() - assocTrack->PhiRad();
+                    Double_t deltaPhi = assocTrack->PhiRad() - trigTrack->PhiRad();
                     if (deltaPhi > 1.5 * TMath::Pi())
                         deltaPhi -= TMath::TwoPi();
                     if (deltaPhi < -0.5 * TMath::Pi())
                         deltaPhi += TMath::TwoPi();
 
-                    fHistDPhiEtaMix[multBin][zvtxBin][ptBinTrk - 1][ptBinAssocTrk - 1]->Fill(deltaPhi,
-                                                                                             trigTrack->Eta() - assocTrack->Eta());
+		    Double_t deltaTheta = trigTrack->ThetaRad() - assocTrack->ThetaRad();
+		    if (deltaTheta > 1.5 * TMath::Pi())
+		      deltaTheta -= TMath::TwoPi();
+		    if (deltaTheta < -0.5 * TMath::Pi())
+		      deltaTheta += TMath::TwoPi();
+		    Double_t deltaEta = assocTrack->Eta() - trigTrack->Eta();
+		    
+		    Double_t dphi,dtheta,deta;
+		    if (!RotateTracks(trigTrack,assocTrack,dphi,dtheta,deta))
+		      printf("Rotation of mixed tracks failed...\n");
+
+		    if (0) {
+		      fHistDPhiEtaMix[multBin][zvtxBin][ptBinTrk - 1][ptBinAssocTrk - 1]->Fill(deltaPhi,deltaEta);
+		      fHistDPhiThetaMix[multBin][zvtxBin][ptBinTrk - 1][ptBinAssocTrk - 1]->Fill(deltaPhi,deltaTheta);
+		    }
+		    else {
+		      fHistDPhiEtaMix[multBin][zvtxBin][ptBinTrk - 1][ptBinAssocTrk - 1]->Fill(dphi,deta);
+		      fHistDPhiThetaMix[multBin][zvtxBin][ptBinTrk - 1][ptBinAssocTrk - 1]->Fill(dphi,dtheta);
+		    }
                 }
             }
         }
@@ -500,6 +545,9 @@ void DData::CreateHistograms(Eopt opt, Eparam par)
 
         fHistoList->Add(new TH1F("partCom", "particles composition", 100, 0.0, 100.0));
         fHistoList->Add(dynamic_cast<TH1F *>(fInputFile->Get("h32")));
+
+        fHistoList->Add(new TH1F("sumpZ", "Sum(pZ) [GeV]", 1000, -200.0, 200.0));
+        fHistoList->Add(new TH2F("sumpZp", "Sum(p) vs Sum(pZ) [GeV]", 100, -200.0, 200.0, 150, 0., 300.));
     }
     else if (opt == kCorrelation)
     {
@@ -565,14 +613,25 @@ void DData::CreateHistograms(Eopt opt, Eparam par)
                     {
                         fHistDPhiEta[iMult][iZvtx][iPtBin][jPtBin] = new TH2D(Form("fHistDPhiEta_Mult%02d_Z%02d_PtBin%02d_%02d", iMult, iZvtx, iPtBin, jPtBin),
                                                                               "",
-                                                                              12, -0.5 * TMath::Pi(), 1.5 * TMath::Pi(),
+                                                                              48, -0.5 * TMath::Pi(), 1.5 * TMath::Pi(),
                                                                               64, -4., 4.);
                         fHistoList->Add(fHistDPhiEta[iMult][iZvtx][iPtBin][jPtBin]);
                         fHistDPhiEtaMix[iMult][iZvtx][iPtBin][jPtBin] = new TH2D(Form("fHistDPhiEtaMix_Mult%02d_Z%02d_PtBin%02d_%02d", iMult, iZvtx, iPtBin, jPtBin),
                                                                                  "",
-                                                                                 12, -0.5 * TMath::Pi(), 1.5 * TMath::Pi(),
+                                                                                 48, -0.5 * TMath::Pi(), 1.5 * TMath::Pi(),
                                                                                  64, -4., 4.);
                         fHistoList->Add(fHistDPhiEtaMix[iMult][iZvtx][iPtBin][jPtBin]);
+
+                        fHistDPhiTheta[iMult][iZvtx][iPtBin][jPtBin] = new TH2D(Form("fHistDPhiTheta_Mult%02d_Z%02d_PtBin%02d_%02d", iMult, iZvtx, iPtBin, jPtBin),
+										"",
+										48, -0.5 * TMath::Pi(), 1.5 * TMath::Pi(),
+										48, -0.5 * TMath::Pi(), 1.5 * TMath::Pi());
+                        fHistoList->Add(fHistDPhiTheta[iMult][iZvtx][iPtBin][jPtBin]);
+                        fHistDPhiThetaMix[iMult][iZvtx][iPtBin][jPtBin] = new TH2D(Form("fHistDPhiThetaMix_Mult%02d_Z%02d_PtBin%02d_%02d", iMult, iZvtx, iPtBin, jPtBin),
+                                                                                 "",
+                                                                                 48, -0.5 * TMath::Pi(), 1.5 * TMath::Pi(),
+                                                                                 48, -0.5 * TMath::Pi(), 1.5 * TMath::Pi());
+                        fHistoList->Add(fHistDPhiThetaMix[iMult][iZvtx][iPtBin][jPtBin]);
                     }
                 }
             }
@@ -712,7 +771,7 @@ void DData::Init()
     fPMasses[3122] = 1.115683;       // lambda
 
     fChain->GetEntry(0);
-    // fEvent = new DEvent(Ecm);
+    fEvent = new DEvent();
 }
 
 //==========================================================================
@@ -840,7 +899,7 @@ Long64_t DData::LoadEvent(Long64_t jentry)
     nb = fChain->GetEntry(jentry);
     if (Cut(ientry) < 0)
         return 0;
-    fEvent = new DEvent();
+    fEvent->Clear();
     fEvent->SetECM(Ecm);
     fEvent->SetEventNumber(jentry);
     fEvent->SetBeamSpot(Bt, Bz);
@@ -940,9 +999,13 @@ void DData::Loop(const Eopt opt, const Epopt popt, const Eparam par)
     Long64_t nbytes = 0;
     for (Long64_t jentry = 0; jentry < fEvents; jentry++)
     {
+      if (jentry%10000 == 0) printf("Event %lld\n",jentry);
         fCurrentEvent = jentry;
         Long64_t rv = LoadEvent(jentry);
 
+	// Event selection cuts
+	//	if (((Bt-0.347)*(Bt-0.347)/0.016/0.016+(Bz+0.71)*(Bz+0.71)/0.76/0.76)>9.) continue;
+	
         if (rv == -1)
             break;
         else if (rv == 0)
@@ -1044,6 +1107,7 @@ void DData::MakeParticlesList(Epopt opt)
     else
         study = Npac;
     Int_t pindex = 0;
+    Int_t pindexJetVeto = 0;
     fMultiplicity = 0;
     for (Int_t index = 0; index < study; index++)
     {
@@ -1053,9 +1117,11 @@ void DData::MakeParticlesList(Epopt opt)
         {
             DParticle *part = (DParticle *)fEvent->Particles()->ConstructedAt(pindex++);
             part->Set(Paid[index], Papx[index], Papy[index], Papz[index], Mass(Paid[index]), Pav0d[index], Rvtx[index], Zvtx[index]);
+	    if (Paje[index] == 0) pindexJetVeto++;
         }
     }
-    fMultiplicity = pindex - 1;
+    fMultiplicity = pindex - 1; // bug? shouldn't it be just = pindex
+    //    fMultiplicity = pindexJetVeto;
 }
 
 // //==========================================================================
@@ -1092,9 +1158,9 @@ void DData::Plot(const Eopt opt) const
             TH1F *ho = dynamic_cast<TH1F *>(h);
             TH1F *hi = dynamic_cast<TH1F *>(next());
             can->cd(npad++)->SetLogy();
-            hi->Draw("hist");
+            if (hi) hi->Draw("hist");
             ho->SetLineColor(2);
-            ho->Draw("hist same");
+            ho->Draw(hi?"hist same":"hist");
         }
         break;
     }
@@ -1339,4 +1405,45 @@ Int_t DData::GetMultBin() const
     if (bin >= fNbinsMult)
         bin = -1;
     return bin;
+}
+
+//====================================================================================================================================================
+Bool_t DData::RotateTracks(const DParticle *trig, const DParticle *assoc, Double_t &dphi, Double_t &dtheta, Double_t &deta) const
+{
+  TVector3 vtrig = trig->Momentum3();
+  if (vtrig.Perp2() == 0.0) {
+    dphi = dtheta = 1e6;
+    return kFALSE;
+  }
+  TVector3 vassoc = assoc->Momentum3();
+  if (vassoc.Mag2() == 0.0) {
+    dphi = dtheta = 1e6;
+    return kFALSE;
+  }
+  Double_t phi = vtrig.Phi();
+  vtrig.RotateZ(-phi);
+  vassoc.RotateZ(-phi);
+
+  dphi = vassoc.Phi();
+  if (dphi > 1.5 * TMath::Pi())
+    dphi -= TMath::TwoPi();
+  if (dphi < -0.5 * TMath::Pi())
+    dphi += TMath::TwoPi();
+
+  Double_t thetatrig  = TMath::Pi()+TMath::ATan2( -vtrig.Px(),  -vtrig.Pz());
+  Double_t thetaassoc = TMath::Pi()+TMath::ATan2(-vassoc.Px(), -vassoc.Pz());
+
+  dtheta = thetaassoc - thetatrig;
+  if (dtheta > 1.5 * TMath::Pi())
+    dtheta -= TMath::TwoPi();
+  if (dtheta < -0.5 * TMath::Pi())
+    dtheta += TMath::TwoPi();
+
+  // vtrig.RotateY(TMath::Pi()/2.-thetatrig);
+  // printf("DEBUG: %f\n",vtrig.Eta());
+  
+  vassoc.RotateY(TMath::Pi()/2.-thetatrig);
+  deta = vassoc.Eta();
+  
+  return kTRUE;
 }

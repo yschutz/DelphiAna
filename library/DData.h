@@ -24,7 +24,8 @@ class TH1D;
 class TH2D;
 class TAxis;
 class DPoolManager;
-class DEvent; 
+class DEvent;
+class DParticle;
 class DData : public TNamed {
 
 public :
@@ -69,6 +70,7 @@ public :
    void SetMultBinning(Int_t nBins, Double_t *limits);
    void SetZvtxBinning(Int_t nBins, Double_t *limits);
    Int_t GetMultBin() const;
+   Bool_t RotateTracks(const DParticle *trig, const DParticle *assoc, Double_t &dphi, Double_t &dtheta, Double_t &deta) const;
    
 private :
    void             CreateHistograms(Eopt opt, Eparam par = kpaNULL);
@@ -116,6 +118,8 @@ private :
    TH1D *fHistTrig[fNMaxBinsMult][fNMaxBinsZvtx][fNMaxBinsPt]; //!
    TH2D *fHistDPhiEta[fNMaxBinsMult][fNMaxBinsZvtx][fNMaxBinsPt][fNMaxBinsPt]; //!
    TH2D *fHistDPhiEtaMix[fNMaxBinsMult][fNMaxBinsZvtx][fNMaxBinsPt][fNMaxBinsPt]; //!   
+   TH2D *fHistDPhiTheta[fNMaxBinsMult][fNMaxBinsZvtx][fNMaxBinsPt][fNMaxBinsPt]; //!
+   TH2D *fHistDPhiThetaMix[fNMaxBinsMult][fNMaxBinsZvtx][fNMaxBinsPt][fNMaxBinsPt]; //!   
    DPoolManager *fPoolMgr; //!
    
    

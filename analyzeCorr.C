@@ -13,20 +13,23 @@
 #include <TF1.h>
 #include <TProfile.h>
 
+const char *names[3] = {"High Mult", "Intermediate Mult", "Low Mult"};
+
 TH1D *ProjectDEta(TH2D *histo, Double_t mindeta, Double_t maxdeta);
 void ScaleBins(TH2D *histo);
 
 void analyzeCorr(const char *filename = "../data/histos.root",
-		Int_t firstZbin = 0, Int_t lastZbin = 0,
-		Double_t minDeta = 1.2, Double_t maxDEta = 2.5,
-		Int_t sumMethod = 2,
-		Int_t extMethod = 4,
-		Int_t phiRebin = 1,
-		Int_t etaRebin = 1,
-		Int_t firstTrigBin = 0,
-		Int_t firstAssocBin = 0,
-		Double_t asScale = -1.0
-	     )
+		 const char *var = "Eta",
+		 Int_t firstZbin = 0, Int_t lastZbin = 0,
+		 Double_t minDeta = 1.2, Double_t maxDEta = 4.0,
+		 Int_t sumMethod = 2,
+		 Int_t extMethod = 4,
+		 Int_t phiRebin = 1,
+		 Int_t etaRebin = 1,
+		 Int_t firstTrigBin = 0, //0,
+		 Int_t firstAssocBin = 0,//0,
+		 Double_t asScale = -1.0
+		 )
 {
   const Int_t nBinsMult = 3;
   const Int_t nBinsPt = 5;
@@ -77,7 +80,7 @@ void analyzeCorr(const char *filename = "../data/histos.root",
 	for(Int_t iBin = 0; iBin < nBinsPt; ++iBin) {
 	  for(Int_t jBin = 0; jBin < nBinsPt; ++jBin) {
 	    if (iBin >= firstTrigBin && jBin >= firstAssocBin) {
-	      TH2D *hDPhiEta = (TH2D*)l->FindObject(Form("fHistDPhiEta_Mult%02d_Z%02d_PtBin%02d_%02d",iCent,j,iBin,jBin));
+	      TH2D *hDPhiEta = (TH2D*)l->FindObject(Form("fHistDPhi%s_Mult%02d_Z%02d_PtBin%02d_%02d",var,iCent,j,iBin,jBin));
 	      hDPhiEta->Sumw2();
 	
 	      if (iBin >= TMath::Max(firstTrigBin,firstAssocBin) &&
@@ -91,7 +94,7 @@ void analyzeCorr(const char *filename = "../data/histos.root",
 	    }
 	    if ((iBin >= firstTrigBin && jBin >= firstAssocBin) ||
 	       	(jBin >= firstTrigBin && iBin >= firstAssocBin)) {
-	      TH2D *hDPhiEtaMix = (TH2D*)lMix->FindObject(Form("fHistDPhiEtaMix_Mult%02d_Z%02d_PtBin%02d_%02d",iCent,j,iBin,jBin));
+	      TH2D *hDPhiEtaMix = (TH2D*)lMix->FindObject(Form("fHistDPhi%sMix_Mult%02d_Z%02d_PtBin%02d_%02d",var,iCent,j,iBin,jBin));
 	      hDPhiEtaMix->Sumw2();
 		
 	      if (!hDphiEtaMixSum[iCent][j])
@@ -196,15 +199,45 @@ void analyzeCorr(const char *filename = "../data/histos.root",
     c1->Divide(3,2);
     for(Int_t iCent = 0; iCent < nBinsMult; ++iCent) {
       c1->cd(iCent+1);
-      hDphiEtaInt[iCent]->GetYaxis()->SetRangeUser(-maxDEta,maxDEta);
-      hDphiEtaInt[iCent]->Draw("lego2");
+      if (strcmp(var,"Eta") == 0) hDphiEtaInt[iCent]->GetYaxis()->SetRangeUser(-maxDEta,maxDEta);
+      hDphiEtaInt[iCent]->SetStats(0);
+      hDphiEtaInt[iCent]->GetXaxis()->SetTitle("#Delta#varphi (rad)");
+      if (strcmp(var,"Eta") == 0) hDphiEtaInt[iCent]->GetYaxis()->SetTitle("#Delta#eta");
+      if (strcmp(var,"Theta") == 0) hDphiEtaInt[iCent]->GetYaxis()->SetTitle("#Delta#theta (rad)");
+      hDphiEtaInt[iCent]->GetZaxis()->SetTitle("Assoc yield per trigger");
+      hDphiEtaInt[iCent]->SetTitle(names[iCent]);
+      hDphiEtaInt[iCent]->GetXaxis()->SetTitleOffset(1.5);
+      hDphiEtaInt[iCent]->GetYaxis()->SetTitleOffset(1.5);
+      hDphiEtaInt[iCent]->GetZaxis()->SetTitleOffset(1.5);
+      hDphiEtaInt[iCent]->Draw("surf5");
     }
     c1->cd(4);
-    hSubtracted2D->GetYaxis()->SetRangeUser(-maxDEta,maxDEta);
-    hSubtracted2D->Draw("lego2");
-    c1->cd(5);
+    if (strcmp(var,"Eta") == 0) hSubtracted2D->GetYaxis()->SetRangeUser(-maxDEta,maxDEta);
+    //    if (strcmp(var,"Eta") == 0)
+    hSubtracted2D->GetZaxis()->SetRangeUser(-0.02,1.05*hSubtracted2D->GetMaximum());
+    hSubtracted2D->SetStats(0);
+    hSubtracted2D->GetXaxis()->SetTitle("#Delta#varphi (rad)");
+    if (strcmp(var,"Eta") == 0) hSubtracted2D->GetYaxis()->SetTitle("#Delta#eta");
+    if (strcmp(var,"Theta") == 0) hSubtracted2D->GetYaxis()->SetTitle("#Delta#theta (rad)");
+    hSubtracted2D->GetZaxis()->SetTitle("Assoc yield per trigger");
+    hSubtracted2D->SetTitle("High Mult - Low Mult");
+    hSubtracted2D->GetXaxis()->SetTitleOffset(1.5);
+    hSubtracted2D->GetYaxis()->SetTitleOffset(1.5);
+    hSubtracted2D->GetZaxis()->SetTitleOffset(1.5);
+    hSubtracted2D->Draw("surf5");
+    //    if (strcmp(var,"Eta") == 0) {
+      c1->cd(5);
+      TH2D *hSubtracted2Dzoom = (TH2D*)hSubtracted2D->Clone(Form("%s_zoomed",hSubtracted2D->GetName()));
+      hSubtracted2Dzoom->SetTitle("High Mult - Low Mult (Zoomed)");
+      hSubtracted2Dzoom->GetZaxis()->SetRangeUser(-0.02,0.15*hSubtracted2D->GetMaximum());
+      hSubtracted2Dzoom->Draw("surf5");
+      //    }
+    
   }
 
+  return;
+  
+  TCanvas *cc = new TCanvas("cc");
   TH1D *hSubtracted = ProjectDEta(hSubtracted2D,minDeta,maxDEta);
   hSubtracted->SetName("hSubtracted");
 

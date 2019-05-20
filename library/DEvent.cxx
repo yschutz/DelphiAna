@@ -43,3 +43,20 @@ Double_t DEvent::ChargedEnergy() const
    }
    return ene / fECM;
 } 
+
+//==========================================================================
+void DEvent::Clear(Option_t *option)
+{
+  // clear event
+  SetName("");
+  SetTitle("");
+  fBeamSpotTrans = -1e9;
+  fBeamSpotLong = -1e9;
+  fChargedMul = -1;
+  fECM = -1e9;
+  fEventNumber = -1;
+  fMul = -1;
+  fParticles->Clear("C");
+  fSphericity[0] = fSphericity[1] = fSphericity[2] = -1e9;
+  fThrust[0] = fThrust[1] = fThrust[2] = -1e9;
+}

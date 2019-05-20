@@ -2,11 +2,11 @@
 help()
 {
 	echo "usage ana.sh  h    = help"
-	echo "             ch ps   = make control histograms and compare with hbook histograms for selected particles"
-	echo "             cd ps   = make control histograms and nmakes relative difference with hbook histograms for selected particles"
-	echo "             co ps   = make correlations of selected particles" 
+	echo "             ch ps folder  = make control histograms and compare with hbook histograms for selected particles"
+	echo "             cd ps folder  = make control histograms and nmakes relative difference with hbook histograms for selected particles"
+	echo "             co ps folder  = make correlations of selected particles" 
 	echo "                ps = a(all), c(charged), h(hadrons), ch(charged hadrons)"
-	echo "             sh      = make single histogram"
+	echo "             sh folder     = make single histogram"
 	exit
 }
 if [ "$#" -eq 0 ]
@@ -14,7 +14,7 @@ then
 	help
 	exit
 else
-	path="../data/"
+	path="../data/$3/"
 	eventfile=$path/event.root
 	if [ ! -f $eventfile ]
 	then 
