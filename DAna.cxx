@@ -63,6 +63,7 @@ void DAna()
 	else if (param.Contains("2"))
 		par = DData::kMultiplicity; 
 
+	TString opt3 = "";
 	if (oo1 == DData::kCorrelation) {
 		TString smulL(gSystem->Getenv("LOWM"));
 		TString smulH(gSystem->Getenv("HIGHM"));
@@ -80,7 +81,8 @@ void DAna()
 		data->SetZvtxBinning(1,z_bins);
 		Double_t pt_bins[6] = {0.4,1,2,3,5,10};
 		data->SetPtBinning(5,pt_bins);
+		opt3 = Form("_%d_%d_%d",smulL.Atoi(),smulH.Atoi(),mix.Atoi());
 	}
 	data->Run(oo1, oo2, par);
-	data->WriteOutput(); 
+	data->WriteOutput(opt1.Data(),opt2.Data(),opt3.Data()); 
 }
