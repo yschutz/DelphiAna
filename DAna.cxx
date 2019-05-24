@@ -69,7 +69,7 @@ void DAna()
 		TString smulH(gSystem->Getenv("HIGHM"));
 		data->SetMulBin(smulL.Atoi(), smulH.Atoi());
 		Double_t mult_bins[4];
-		mult_bins[0] = -1e6.;
+		mult_bins[0] = -1e6;
 		mult_bins[1] = -smulH.Atof();
 		mult_bins[2] = -smulL.Atof();
 		mult_bins[3] = 0.;
