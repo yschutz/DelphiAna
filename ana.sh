@@ -81,8 +81,18 @@ else
 	echo "ERROR: $LIBDIR not found!"
 	exit 1
 fi 
-SAVE=$LD_LIBRARY_PATH
 CPATH=`pwd`	
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CPATH/library
-root -l DAna.cxx
-export LD_LIBRARY_PATH=$SAVE
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+	SAVE=$LD_LIBRARY_PATH
+	export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CPATH/library
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+	SAVE=$DYLD_LIBRARY_PATH
+	export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$CPATH/library
+fi	
+root -l DAna.cxx++
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+	export LD_LIBRARY_PATH=$SAVE
+	export LD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$CPATH/library
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+	export DYLD_LIBRARY_PATH=$SAVE
+fi
