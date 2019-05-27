@@ -36,7 +36,7 @@ void DAna()
 	TString param(gSystem->Getenv("PARAM")); 
 	DData::Eopt oo1; 
 	DData::Epopt oo2 = DData::kAll; 
-	DData::Eparam par; 
+	DData::Eparam par = DData::kpaNULL; 
 	if (opt1.Contains("CH"))
 		oo1 = DData::kControlHisto; 
 	else if (opt1.Contains("CD"))

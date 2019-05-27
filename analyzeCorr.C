@@ -53,14 +53,14 @@ void analyzeCorr(const char *filename = "../data/histos.root",
   {
     for(Int_t iCent = 0; iCent < nBinsMult; ++iCent) {
       for(Int_t j = firstZbin; j <= lastZbin; ++j) {
-	for(Int_t iPtBin = firstTrigBin; iPtBin < nBinsPt; ++iPtBin) {
-	  TH1D *histTrigTrk = (TH1D*)l->FindObject(Form("fHistTrig_Mult%02d_Z%02d_PtBin%02d",iCent,j,iPtBin));
-	  histTrigTrk->Sumw2();
-	  if (!histTrigBin[iCent][j])
-	    histTrigBin[iCent][j] = (TH1D*)histTrigTrk->Clone(Form("histTrigBin_%d_%d",iCent,j));
-	  else
-	    histTrigBin[iCent][j]->Add(histTrigTrk);
-	}
+	      for(Int_t iPtBin = firstTrigBin; iPtBin < nBinsPt; ++iPtBin) {
+	        TH1D *histTrigTrk = (TH1D*)l->FindObject(Form("fHistTrig_Mult%02d_Z%02d_PtBin%02d",iCent,j,iPtBin));
+	        histTrigTrk->Sumw2();
+	        if (!histTrigBin[iCent][j])
+	          histTrigBin[iCent][j] = (TH1D*)histTrigTrk->Clone(Form("histTrigBin_%d_%d",iCent,j));
+	        else
+	          histTrigBin[iCent][j]->Add(histTrigTrk);
+	      }
       }
     }
   }
@@ -77,33 +77,28 @@ void analyzeCorr(const char *filename = "../data/histos.root",
   {
     for(Int_t iCent = 0; iCent < nBinsMult; ++iCent) {
       for(Int_t j = firstZbin; j <= lastZbin; ++j) {
-	for(Int_t iBin = 0; iBin < nBinsPt; ++iBin) {
-	  for(Int_t jBin = 0; jBin < nBinsPt; ++jBin) {
-	    if (iBin >= firstTrigBin && jBin >= firstAssocBin) {
-	      TH2D *hDPhiEta = (TH2D*)l->FindObject(Form("fHistDPhi%s_Mult%02d_Z%02d_PtBin%02d_%02d",var,iCent,j,iBin,jBin));
-	      hDPhiEta->Sumw2();
-	
-	      if (iBin >= TMath::Max(firstTrigBin,firstAssocBin) &&
-		  jBin >= TMath::Max(firstTrigBin,firstAssocBin))
-		ScaleBins(hDPhiEta);
-	
-	      if (!hDphiEtaSum[iCent][j])
-		hDphiEtaSum[iCent][j] = (TH2D*)hDPhiEta->Clone(Form("hDphiEtaSum_%02d_%02d",iCent,j));
-	      else
-		hDphiEtaSum[iCent][j]->Add(hDPhiEta);
-	    }
-	    if ((iBin >= firstTrigBin && jBin >= firstAssocBin) ||
-	       	(jBin >= firstTrigBin && iBin >= firstAssocBin)) {
-	      TH2D *hDPhiEtaMix = (TH2D*)lMix->FindObject(Form("fHistDPhi%sMix_Mult%02d_Z%02d_PtBin%02d_%02d",var,iCent,j,iBin,jBin));
-	      hDPhiEtaMix->Sumw2();
-		
-	      if (!hDphiEtaMixSum[iCent][j])
-		hDphiEtaMixSum[iCent][j] = (TH2D*)hDPhiEtaMix->Clone(Form("hDphiEtaMixSum_%02d_%02d",iCent,j));
-	      else
-		hDphiEtaMixSum[iCent][j]->Add(hDPhiEtaMix);
-	    }
-	  }
-	}
+	      for(Int_t iBin = 0; iBin < nBinsPt; ++iBin) {
+	        for(Int_t jBin = 0; jBin < nBinsPt; ++jBin) {
+	          if (iBin >= firstTrigBin && jBin >= firstAssocBin) {
+              TH2D *hDPhiEta = (TH2D*)l->FindObject(Form("fHistDPhi%s_Mult%02d_Z%02d_PtBin%02d_%02d",var,iCent,j,iBin,jBin));
+	            hDPhiEta->Sumw2();
+	            if (iBin >= TMath::Max(firstTrigBin,firstAssocBin) && jBin >= TMath::Max(firstTrigBin,firstAssocBin))
+		            ScaleBins(hDPhiEta);
+	            if (!hDphiEtaSum[iCent][j])
+		            hDphiEtaSum[iCent][j] = (TH2D*)hDPhiEta->Clone(Form("hDphiEtaSum_%02d_%02d",iCent,j));
+	            else
+		            hDphiEtaSum[iCent][j]->Add(hDPhiEta);
+	          }
+	          if ((iBin >= firstTrigBin && jBin >= firstAssocBin) || (jBin >= firstTrigBin && iBin >= firstAssocBin)) {
+	            TH2D *hDPhiEtaMix = (TH2D*)lMix->FindObject(Form("fHistDPhi%sMix_Mult%02d_Z%02d_PtBin%02d_%02d",var,iCent,j,iBin,jBin));
+	            hDPhiEtaMix->Sumw2();
+      	      if (!hDphiEtaMixSum[iCent][j])
+		            hDphiEtaMixSum[iCent][j] = (TH2D*)hDPhiEtaMix->Clone(Form("hDphiEtaMixSum_%02d_%02d",iCent,j));
+	            else
+		            hDphiEtaMixSum[iCent][j]->Add(hDPhiEtaMix);
+	          }
+	        }
+	      }
       }
     }
   }
@@ -112,51 +107,51 @@ void analyzeCorr(const char *filename = "../data/histos.root",
   {
     for(Int_t iCent = 0; iCent < nBinsMult; ++iCent) {
       for(Int_t iz = firstZbin; iz <= lastZbin; ++iz) {
-	Double_t sum = 0;
-	if (sumMethod == 0) {
+	      Double_t sum = 0;
+	      if (sumMethod == 0) {
 	  // Take sum at maximum acceptance in deta
-	  for(Int_t k = 0; k <= (hDphiEtaMixSum[iCent][iz]->GetNbinsY()+1); ++k) {
-	    Double_t sumPart = 0;
-	    for(Int_t j = 1; j <= hDphiEtaMixSum[iCent][iz]->GetNbinsX(); ++j) {
-		sumPart += hDphiEtaMixSum[iCent][iz]->GetBinContent(j,k);
+	        for(Int_t k = 0; k <= (hDphiEtaMixSum[iCent][iz]->GetNbinsY()+1); ++k) {
+	          Double_t sumPart = 0;
+	          for(Int_t j = 1; j <= hDphiEtaMixSum[iCent][iz]->GetNbinsX(); ++j) {
+		          sumPart += hDphiEtaMixSum[iCent][iz]->GetBinContent(j,k);
+	          }
+	          if (sumPart > sum) sum = sumPart;
+	        }
 	      }
-	    if (sumPart > sum) sum = sumPart;
-	  }
-	}
-	if (sumMethod == 1) {
+	      if (sumMethod == 1) {
 	  // Take sum as integral in deta
-	  for(Int_t k = 0; k <= (hDphiEtaMixSum[iCent][iz]->GetNbinsY()+1); ++k) {
-	    for(Int_t j = 1; j <= hDphiEtaMixSum[iCent][iz]->GetNbinsX(); ++j) {
-		sum += hDphiEtaMixSum[iCent][iz]->GetBinContent(j,k);
-	    }
-	  }
-	}
-	if (sumMethod == 2) {
+	        for(Int_t k = 0; k <= (hDphiEtaMixSum[iCent][iz]->GetNbinsY()+1); ++k) {
+	          for(Int_t j = 1; j <= hDphiEtaMixSum[iCent][iz]->GetNbinsX(); ++j) {
+		          sum += hDphiEtaMixSum[iCent][iz]->GetBinContent(j,k);
+	          }
+	        }
+	      }
+	      if (sumMethod == 2) {
 	  // Take sum close to (0,0)
-	  Int_t bin1x = hDphiEtaMixSum[iCent][iz]->GetXaxis()->FindBin(-1e-6);
-	  Int_t bin2x = hDphiEtaMixSum[iCent][iz]->GetXaxis()->FindBin(+1e-6);
-	  Int_t bin1y = hDphiEtaMixSum[iCent][iz]->GetYaxis()->FindBin(-1e-6);
-	  Int_t bin2y = hDphiEtaMixSum[iCent][iz]->GetYaxis()->FindBin(+1e-6);
-	  for(Int_t k = bin1y; k <= bin2y; ++k) {
-	    for(Int_t j = bin1x; j <= bin2x; ++j) {
-		sum += hDphiEtaMixSum[iCent][iz]->GetBinContent(j,k);
-	    }
-	  }
-	}
-	printf("Sum = %f (%d %d)\n",sum,iCent,iz);
-	if (sum == 0)
-	  exit(0);
-	else {
+	        Int_t bin1x = hDphiEtaMixSum[iCent][iz]->GetXaxis()->FindBin(-1e-6);
+	        Int_t bin2x = hDphiEtaMixSum[iCent][iz]->GetXaxis()->FindBin(+1e-6);
+	        Int_t bin1y = hDphiEtaMixSum[iCent][iz]->GetYaxis()->FindBin(-1e-6);
+	        Int_t bin2y = hDphiEtaMixSum[iCent][iz]->GetYaxis()->FindBin(+1e-6);
+	        for(Int_t k = bin1y; k <= bin2y; ++k) {
+	          for(Int_t j = bin1x; j <= bin2x; ++j) {
+		          sum += hDphiEtaMixSum[iCent][iz]->GetBinContent(j,k);
+	          }
+	        }
+	      }
+	      printf("Sum = %f (%d %d)\n",sum,iCent,iz);
+	      if (sum == 0)
+	        exit(0);
+	      else {
 	  //	if (sum > 0) {
-	  for(Int_t k = 0; k <= (hDphiEtaMixSum[iCent][iz]->GetNbinsY()+1); ++k) {
-	    for(Int_t j = 1; j <= hDphiEtaMixSum[iCent][iz]->GetNbinsX(); ++j) {
-	      hDphiEtaMixSum[iCent][iz]->SetBinContent(j,k,
-						       histTrigBin[iCent][iz]->GetBinContent(1)/sum*hDphiEtaMixSum[iCent][iz]->GetBinContent(j,k));
-	      hDphiEtaMixSum[iCent][iz]->SetBinError(j,k,
-						     histTrigBin[iCent][iz]->GetBinContent(1)/sum*hDphiEtaMixSum[iCent][iz]->GetBinError(j,k));
-	    }
-	  }
-	}
+	        for(Int_t k = 0; k <= (hDphiEtaMixSum[iCent][iz]->GetNbinsY()+1); ++k) {
+	          for(Int_t j = 1; j <= hDphiEtaMixSum[iCent][iz]->GetNbinsX(); ++j) {
+	            hDphiEtaMixSum[iCent][iz]->SetBinContent(j,k,
+						  histTrigBin[iCent][iz]->GetBinContent(1)/sum*hDphiEtaMixSum[iCent][iz]->GetBinContent(j,k));
+	            hDphiEtaMixSum[iCent][iz]->SetBinError(j,k,
+						  histTrigBin[iCent][iz]->GetBinContent(1)/sum*hDphiEtaMixSum[iCent][iz]->GetBinError(j,k));
+	          }
+	        }
+	      }
        	hDphiEtaSum[iCent][iz]->Divide(hDphiEtaMixSum[iCent][iz]);
       }
     }
@@ -169,23 +164,23 @@ void analyzeCorr(const char *filename = "../data/histos.root",
       hDphiEtaInt[iCent]->Reset();
       Int_t nZeros = 0;
       for(Int_t j = 1; j <= hDphiEtaInt[iCent]->GetNbinsX(); ++j) {
-	for(Int_t k = 0; k <= (hDphiEtaInt[iCent]->GetNbinsY()+1); ++k) {
-	  Double_t sum = 0;
-	  Double_t sumErr = 0;
-	  for(Int_t iz = firstZbin; iz <= lastZbin; ++iz) {
-	    if (hDphiEtaSum[iCent][iz]->GetBinContent(j,k) > 0) {
-	      sum += (hDphiEtaSum[iCent][iz]->GetBinContent(j,k)/hDphiEtaSum[iCent][iz]->GetBinError(j,k)/hDphiEtaSum[iCent][iz]->GetBinError(j,k));
-	      sumErr += (1./hDphiEtaSum[iCent][iz]->GetBinError(j,k)/hDphiEtaSum[iCent][iz]->GetBinError(j,k));
-	    }
-	    else {
-	      nZeros++;
-	    }
-	  }
-	  if (sumErr > 0) {
-	    hDphiEtaInt[iCent]->SetBinContent(j,k,sum/sumErr);
-	    hDphiEtaInt[iCent]->SetBinError(j,k,TMath::Sqrt(2./sumErr));
-	  }
-	}
+	      for(Int_t k = 0; k <= (hDphiEtaInt[iCent]->GetNbinsY()+1); ++k) {
+	        Double_t sum = 0;
+	        Double_t sumErr = 0;
+	        for(Int_t iz = firstZbin; iz <= lastZbin; ++iz) {
+	          if (hDphiEtaSum[iCent][iz]->GetBinContent(j,k) > 0) {
+	            sum += (hDphiEtaSum[iCent][iz]->GetBinContent(j,k)/hDphiEtaSum[iCent][iz]->GetBinError(j,k)/hDphiEtaSum[iCent][iz]->GetBinError(j,k));
+	            sumErr += (1./hDphiEtaSum[iCent][iz]->GetBinError(j,k)/hDphiEtaSum[iCent][iz]->GetBinError(j,k));
+	          }
+	          else {
+	            nZeros++;
+	          }
+	        }
+	        if (sumErr > 0) {
+	          hDphiEtaInt[iCent]->SetBinContent(j,k,sum/sumErr);
+	          hDphiEtaInt[iCent]->SetBinError(j,k,TMath::Sqrt(2./sumErr));
+	        }
+	      }
 	//	printf("Zeros %d %d -> %d\n",iCent,i,nZeros);
       }
     }
@@ -282,9 +277,8 @@ void analyzeCorr(const char *filename = "../data/histos.root",
     if ((extMethod == 3) || (extMethod == 4)) func->FixParameter(4,sigma);
     hSubtracted->Fit(func,"I");
     hSubtracted->Fit(func,"I");
-    printf("Results => b0 = %f  a0 = %f  a2 = %f   v2 = %f +- %f\n",
-	   b,func->GetParameter(0),func->GetParameter(2)*(b+func->GetParameter(0)),
-	   TMath::Sqrt(func->GetParameter(2)),0.5*func->GetParError(2)/TMath::Sqrt(func->GetParameter(2)));
+    printf("Results => b0 = %f  a0 = %f  a2 = %f   v2 = %f +- %f\n", b,func->GetParameter(0),func->GetParameter(2)*(b+func->GetParameter(0)),
+	                                                                   TMath::Sqrt(func->GetParameter(2)),0.5*func->GetParError(2)/TMath::Sqrt(func->GetParameter(2)));
     delete cTemp;
     TFile fOut("resultsCorr.root","UPDATE");
     hSubtracted->SetName(Form("%s_%d_%d_%.1f_%.1f_%d_%d_%d_%d_%d_%d_%.1f",
@@ -309,10 +303,10 @@ TH1D *ProjectDEta(TH2D *histo, Double_t mindeta, Double_t maxdeta)
     TH1D *hDEta = (TH1D*)histo->ProjectionY(Form("%s_%d",histo->GetName(),i),i,i);
     if (1) {
       for(Int_t j = 0; j <= (hDEta->GetNbinsX()/2); ++j) {
-	hDEta->SetBinContent(j,
-			     hDEta->GetBinContent(j)+
-			     hDEta->GetBinContent(hDEta->GetNbinsX()+1-j));
-	hDEta->SetBinError(j,
+	      hDEta->SetBinContent(j,
+			  hDEta->GetBinContent(j)+
+			  hDEta->GetBinContent(hDEta->GetNbinsX()+1-j));
+	      hDEta->SetBinError(j,
 			   TMath::Sqrt(hDEta->GetBinError(j)*hDEta->GetBinError(j)+
 				       hDEta->GetBinError(hDEta->GetNbinsX()+1-j)*hDEta->GetBinError(hDEta->GetNbinsX()+1-j)));
       }
