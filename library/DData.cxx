@@ -45,7 +45,7 @@ ClassImp(DData)
     inputFileName.Prepend(fDataDirName);
 
     //where to store the output histograms
-    fOutputFilename = "histos.root";
+    fOutputFilename = "histos";
     fOutputFilename.Prepend(fDataDirName);
     // name o the ntuple in the root data file
     const TString kNtupleName("h100");
@@ -301,8 +301,8 @@ void DData::Correlation()
     for (Int_t iTrack = 0; iTrack < fEvent->Particles()->GetEntriesFast(); iTrack++)
     {
         DParticle *trigTrack = (DParticle *)fEvent->Particles()->UncheckedAt(iTrack);
-	if (trigTrack->Eta()<=-1.74 ||
-	    trigTrack->Eta()>= 1.74) continue;
+	if (trigTrack->Eta()<=-1.7 ||
+	    trigTrack->Eta()>= 1.7) continue;
         if (trigTrack->VtxR() > 0.1 ||
             trigTrack->VtxZ() > 1.0)
             continue; // only primary tracks
@@ -320,8 +320,8 @@ void DData::Correlation()
             DParticle *assocTrack = (DParticle *)fEvent->Particles()->UncheckedAt(jTrack);
             if (jTrack == iTrack)
                 continue;
-	    if (assocTrack->Eta()<=-1.74 ||
-		assocTrack->Eta()>= 1.74) continue;
+	    if (assocTrack->Eta()<=-1.7 ||
+		assocTrack->Eta()>= 1.7) continue;
             if (assocTrack->VtxR() > 0.1 ||
                 assocTrack->VtxZ() > 1.0)
                 continue; // only primary tracks
@@ -369,8 +369,8 @@ void DData::Correlation()
                 for (Int_t jTrack = 0; jTrack < mixedTrk->GetEntriesFast(); jTrack++)
                 {
                     DParticle *assocTrack = (DParticle *)mixedTrk->UncheckedAt(jTrack);
-                    if (assocTrack->Eta()<=-1.74 ||
-                     	assocTrack->Eta()>= 1.74) continue;
+                    if (assocTrack->Eta()<=-1.7 ||
+                     	assocTrack->Eta()>= 1.7) continue;
                     if (assocTrack->VtxR() > 0.1 ||
                         assocTrack->VtxZ() > 1.0)
                         continue; // only primary tracks
@@ -998,13 +998,14 @@ void DData::Loop(const Eopt opt, const Epopt popt, const Eparam par)
     fEvents = fChain->GetEntriesFast();
     Long64_t nbytes = 0;
     for (Long64_t jentry = 0; jentry < fEvents; jentry++)
+    //    for (Long64_t jentry = 0; jentry < 10000; jentry++)
     {
       if (jentry%10000 == 0) printf("Event %lld\n",jentry);
         fCurrentEvent = jentry;
         Long64_t rv = LoadEvent(jentry);
 
 	// Event selection cuts
-	//	if (((Bt-0.347)*(Bt-0.347)/0.016/0.016+(Bz+0.71)*(Bz+0.71)/0.76/0.76)>9.) continue;
+	if (((Bt-0.33)*(Bt-0.33)/0.025/0.025+(Bz+0.71)*(Bz+0.71)/0.76/0.76)>9.) continue;
 	
         if (rv == -1)
             break;
@@ -1120,7 +1121,7 @@ void DData::MakeParticlesList(Epopt opt)
 	    if (Paje[index] == 0) pindexJetVeto++;
         }
     }
-    fMultiplicity = pindex - 1; // bug? shouldn't it be just = pindex
+    fMultiplicity = pindex;
     //    fMultiplicity = pindexJetVeto;
 }
 
@@ -1324,11 +1325,11 @@ void DData::SingleHisto(Eparam par)
 }
 
 //==========================================================================
-void DData::WriteOutput()
+void DData::WriteOutput(const char *opt1, const char *opt2, const char *opt3)
 {
     // write to the outputfile all memory objects attached to it
     if (!fHistosOutFile)
-        fHistosOutFile = new TFile(fOutputFilename, "RECREATE", "Delphi basic histograms");
+      fHistosOutFile = new TFile(Form("%s_%s_%s%s.root",fOutputFilename.Data(),opt1,opt2,opt3), "RECREATE", "Delphi basic histograms");
     if (fHistosOutFile)
     {
         //     fHistosOutFile->Write();

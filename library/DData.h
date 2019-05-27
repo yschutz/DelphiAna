@@ -64,7 +64,7 @@ public :
    void             SetMulBin(Int_t low, Int_t high)       { fMulLow = low; fMulHigh = high; }
    void             SetVerbosity(Int_t verb)               { fVerbose = verb; }
    void             SingleHisto(Eparam par); 
-   void             WriteOutput(); 
+   void             WriteOutput(const char *opt1, const char *opt2, const char *opt3); 
 
    void SetPtBinning(Int_t nBins, Double_t *limits);
    void SetMultBinning(Int_t nBins, Double_t *limits);
