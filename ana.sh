@@ -14,8 +14,11 @@ then
 	help
 	exit
 else
-	path="../data/$3/"
+	CPATH=`pwd`
+	cd $CPATH/library	
+	path=$CPATH/../data/$3
 	eventfile=$path/event.root
+	echo `pwd` $eventfile
 	if [ ! -f $eventfile ]
 	then 
 		echo $eventfile not found
@@ -66,9 +69,9 @@ else
 		export MIX=$mix
 	fi
 fi
-LIBDIR=./library
+LIBDIR=$CPATH/library
 if [ -d "$LIBDIR" ]; then
-	cd ./library
+	cd $CPATH/library
 	make
     retVal=$?
  	if [ $retVal -ne 0 ]; then
@@ -76,23 +79,9 @@ if [ -d "$LIBDIR" ]; then
 		cd ..
 		exit $retVal
 	fi
-	cd ..
 else
 	echo "ERROR: $LIBDIR not found!"
 	exit 1
 fi 
-CPATH=`pwd`	
-if [[ "$OSTYPE" == "linux-gnu" ]]; then
-	SAVE=$LD_LIBRARY_PATH
-	export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CPATH/library
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-	SAVE=$DYLD_LIBRARY_PATH
-	export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$CPATH/library
-fi	
-root -l DAna.cxx++
-if [[ "$OSTYPE" == "linux-gnu" ]]; then
-	export LD_LIBRARY_PATH=$SAVE
-	export LD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$CPATH/library
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-	export DYLD_LIBRARY_PATH=$SAVE
-fi
+echo `pwd`
+root -l $CPATH/DAna.cxx++
