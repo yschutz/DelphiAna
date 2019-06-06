@@ -911,6 +911,7 @@ Long64_t DData::LoadEvent(Long64_t jentry)
     fEvent->SetTitle(name);
     fEvent->SetSpericity(Sphval1, Sphval2, Sphval3);
     fEvent->SetThrust(Thrval1, Thrval2, Thrval3);
+    fEvent->SetJet(Njer, Dminr); 
     MakeParticlesList(fCurrentPartSel);
     // if (fMultiplicity >= fMulLow && fMultiplicity <= fMulHigh)
     //    return 0;
@@ -998,7 +999,7 @@ void DData::Loop(const Eopt opt, const Epopt popt, const Eparam par)
     fEvents = fChain->GetEntriesFast();
     Long64_t nbytes = 0;
     for (Long64_t jentry = 0; jentry < fEvents; jentry++)
-    //    for (Long64_t jentry = 0; jentry < 10000; jentry++)
+    //    for (Long64_t jentry = 0; jentry < 10; jentry++)
     {
       if (jentry%10000 == 0) printf("Event %lld\n",jentry);
         fCurrentEvent = jentry;
@@ -1112,14 +1113,19 @@ void DData::MakeParticlesList(Epopt opt)
     fMultiplicity = 0;
     for (Int_t index = 0; index < study; index++)
     {
+        if ( (TMath::Abs(Rvtx[index]) > 0.1 || TMath::Abs(Zvtx[index]) > 1.0) || Pav0d[index] != 0 || Pani[index] == kTRUE)
+            continue; 
         if ((opt == kHadrons || opt == kChargedHadrons) && !IsHadron(index))
             continue;
-        else
-        {
-            DParticle *part = (DParticle *)fEvent->Particles()->ConstructedAt(pindex++);
-            part->Set(Paid[index], Papx[index], Papy[index], Papz[index], Mass(Paid[index]), Pav0d[index], Rvtx[index], Zvtx[index]);
-	    if (Paje[index] == 0) pindexJetVeto++;
-        }
+        DParticle *part = (DParticle *)fEvent->Particles()->ConstructedAt(pindex++);
+        part->Set(Paid[index], Papx[index], Papy[index], Papz[index], Mass(Paid[index]), Pav0d[index], Rvtx[index], Zvtx[index]);
+        // if (Pani[index])
+        //     std::cout << index + 1 << " " << Paid[index] << " " << Rvtx[index] << " " << 
+        //                      Pav0d[index] << " " << Pav0m[index] << " true" << std::endl;  
+        // else 
+        //     std::cout << index + 1 << " " << Paid[index] << " " << Rvtx[index] << " " << 
+        //                      Pav0d[index] << " " << Pav0m[index] << " false" << std::endl;  
+        if (Paje[index] == 0) pindexJetVeto++;
     }
     fMultiplicity = pindex;
     //    fMultiplicity = pindexJetVeto;
