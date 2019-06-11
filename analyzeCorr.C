@@ -54,6 +54,7 @@ void analyzeCorr(const char *filename = "../data/histos.root",
     for(Int_t iCent = 0; iCent < nBinsMult; ++iCent) {
       for(Int_t j = firstZbin; j <= lastZbin; ++j) {
 	      for(Int_t iPtBin = firstTrigBin; iPtBin < nBinsPt; ++iPtBin) {
+          std::cout << "********** " << Form("fHistTrig_Mult%02d_Z%02d_PtBin%02d",iCent,j,iPtBin) << std::endl;
 	        TH1D *histTrigTrk = (TH1D*)l->FindObject(Form("fHistTrig_Mult%02d_Z%02d_PtBin%02d",iCent,j,iPtBin));
 	        histTrigTrk->Sumw2();
 	        if (!histTrigBin[iCent][j])

@@ -37,6 +37,7 @@ public :
    enum  Eparam {kpaNULL, kThrust, kMultiplicity};
 
    DData(const TString &name, const TString &title, const TString &dirname);
+   DData(const TString &name, const TString &title, TChain * chain);
    virtual ~DData();
    virtual Int_t    Cut(Long64_t entry);
    virtual Int_t    GetEntry(Long64_t entry);

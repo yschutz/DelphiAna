@@ -78,6 +78,52 @@ ClassImp(DData)
 }
 
 //==========================================================================
+    DData::DData(const TString &name, const TString &title, TChain *chain) : TNamed(name, title), fChain(chain),
+                                                                                      fEvent(nullptr),
+                                                                                      fHCreated(kFALSE), fHCorrelation(kFALSE),
+                                                                                      fHistoList(nullptr), fHistosOutFile(nullptr),
+                                                                                      fMixing(10), fMultiplicity(0),
+                                                                                      fTriggersH(0), fTriggersL(0),
+                                                                                      fVerbose(0),
+                                                                                      fNbinsMult(0),
+                                                                                      fNbinsTrackPt(0),
+                                                                                      fNbinsZvtx(1),
+                                                                                      fMultAxis(0x0),
+                                                                                      fTrackPtAxis(0x0),
+                                                                                      fZvtxAxis(0x0),
+                                                                                      fPoolMgr(0x0)
+
+{
+    // ctor
+    fPopt[kAll] = TString("All");
+    fPopt[kCharged] = TString("Charged");
+    fPopt[kHadrons] = TString("Charged Hadrons");
+
+   
+    //where to store the output histograms
+    fOutputFilename = "histos";
+    // name o the ntuple in the root data file
+    Init();
+
+    for (Int_t iMult = 0; iMult < fNMaxBinsMult; iMult++)
+    {
+        for (Int_t iZvtx = 0; iZvtx < fNMaxBinsZvtx; ++iZvtx)
+        {
+            for (Int_t iPtBin = 0; iPtBin < fNMaxBinsPt; iPtBin++)
+            {
+                fHistTrig[iMult][iZvtx][iPtBin] = NULL;
+                for (Int_t jPtBin = 0; jPtBin < fNMaxBinsPt; jPtBin++)
+                {
+                    fHistDPhiEta[iMult][iZvtx][iPtBin][jPtBin] = NULL;
+                    fHistDPhiEtaMix[iMult][iZvtx][iPtBin][jPtBin] = NULL;
+                    fHistDPhiTheta[iMult][iZvtx][iPtBin][jPtBin] = NULL;
+                    fHistDPhiThetaMix[iMult][iZvtx][iPtBin][jPtBin] = NULL;
+                }
+            }
+        }
+    }
+}
+//==========================================================================
 DData::~DData()
 {
     // dtor
